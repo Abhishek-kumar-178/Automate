@@ -2,7 +2,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 # -------------------- Login Page --------------------
 class LoginPage:
@@ -13,97 +14,145 @@ class LoginPage:
         self.login_button = (By.XPATH, "//button[@type='submit']")
 
     def login(self, username, password):
-        WebDriverWait(self.driver, 10).until(
+        WebDriverWait(self.driver, 15).until(
             EC.presence_of_element_located(self.username_input)
         ).send_keys(username)
         self.driver.find_element(*self.password_input).send_keys(password)
         self.driver.find_element(*self.login_button).click()
-
 
 # -------------------- PIM Page --------------------
 class PIMPage:
     def __init__(self, driver):
         self.driver = driver
         self.pim_menu = (By.XPATH, "//span[text()='PIM']")
-        self.add_employee_link = (By.XPATH, "//a[contains(@href,'pim/addEmployee')]")
+        self.add_employee_button = (By.XPATH, "//button[contains(.,'Add')]")
         self.first_name = (By.NAME, "firstName")
         self.last_name = (By.NAME, "lastName")
         self.save_button = (By.XPATH, "//button[@type='submit']")
         self.employee_list_link = (By.XPATH, "//a[contains(@href,'pim/viewEmployeeList')]")
         self.search_name = (By.XPATH, "//input[@placeholder='Type for hints...']")
+        self.search_id = (By.XPATH, "//input[@placeholder='Employee Id']")
         self.search_button = (By.XPATH, "//button[@type='submit']")
 
+    # Navigate to PIM menu
     def go_to_pim(self):
-        WebDriverWait(self.driver, 10).until(
+        WebDriverWait(self.driver, 15).until(
             EC.element_to_be_clickable(self.pim_menu)
         ).click()
 
-    def add_new_employee(self, first, last):
-        WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable(self.add_employee_link)
+    # Go to Add Employee page
+    def go_to_add_employee(self):
+        self.go_to_pim()
+        WebDriverWait(self.driver, 15).until(
+            EC.element_to_be_clickable(self.add_employee_button)
         ).click()
-        WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located(self.first_name)
+
+    # Add a new employee
+    def add_new_employee(self, first, last):
+        WebDriverWait(self.driver, 15).until(
+            EC.visibility_of_element_located(self.first_name)
         ).send_keys(first)
         self.driver.find_element(*self.last_name).send_keys(last)
-        self.driver.find_element(*self.save_button).click()
-        time.sleep(2)  # wait for save to complete
 
-    def verify_employee(self, name):
-        WebDriverWait(self.driver, 10).until(
+        WebDriverWait(self.driver, 15).until(
+            EC.element_to_be_clickable(self.save_button)
+        ).click()
+
+        # Wait for form to process
+        WebDriverWait(self.driver, 15).until(
+            EC.invisibility_of_element_located((By.CSS_SELECTOR, ".oxd-form-loader"))
+        )
+
+    # Go to Employee List page
+    def go_to_employee_list(self):
+        self.go_to_pim()
+        WebDriverWait(self.driver, 15).until(
             EC.element_to_be_clickable(self.employee_list_link)
         ).click()
 
-        search_box = WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located(self.search_name)
-        )
-        search_box.clear()
-        search_box.send_keys(name)
+    # Verify employee by name or ID
+    def verify_employee(self, first=None, last=None, emp_id=None):
+        self.go_to_employee_list()
 
-        WebDriverWait(self.driver, 10).until(
+        WebDriverWait(self.driver, 15).until(
+            EC.invisibility_of_element_located((By.CSS_SELECTOR, ".oxd-form-loader"))
+        )
+
+        if emp_id:
+            search_field = WebDriverWait(self.driver, 15).until(
+                EC.presence_of_element_located(self.search_id)
+            )
+            search_field.clear()
+            search_field.send_keys(emp_id)
+        else:
+            search_field = WebDriverWait(self.driver, 15).until(
+                EC.presence_of_element_located(self.search_name)
+            )
+            search_field.clear()
+            full_name = f"{first} {last}" if first and last else first
+            search_field.send_keys(full_name)
+
+        WebDriverWait(self.driver, 15).until(
             EC.element_to_be_clickable(self.search_button)
         ).click()
 
-        time.sleep(2)  # give time for list to update
-        if name in self.driver.page_source:
-            print("Name Verified")
-        else:
-            print("Name Not Found")
+        WebDriverWait(self.driver, 15).until(
+            EC.invisibility_of_element_located((By.CSS_SELECTOR, ".oxd-form-loader"))
+        )
 
+        # Print verification result
+        if emp_id:
+            if emp_id in self.driver.page_source:
+                print(f"Employee ID {emp_id} Verified ✅")
+            else:
+                print(f"Employee ID {emp_id} Not Found ❌")
+        else:
+            if full_name in self.driver.page_source:
+                print(f"{full_name} Verified ✅")
+            else:
+                print(f"{full_name} Not Found ❌")
+
+# -------------------- Logout --------------------
+def logout(driver):
+    WebDriverWait(driver, 15).until(
+        EC.element_to_be_clickable((By.CLASS_NAME, "oxd-userdropdown-tab"))
+    ).click()
+
+    WebDriverWait(driver, 15).until(
+        EC.element_to_be_clickable((By.LINK_TEXT, "Logout"))
+    ).click()
+
+    WebDriverWait(driver, 15).until(
+        EC.presence_of_element_located((By.NAME, "username"))
+    )
+    print("Logged out successfully ✅")
 
 # -------------------- Test Workflow --------------------
 class TestOrangeHRM:
     def test_workflow(self):
-        driver = webdriver.Chrome()
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
         driver.get("https://opensource-demo.orangehrmlive.com/web/index.php/auth/login")
         driver.maximize_window()
 
-        # Login
         login = LoginPage(driver)
         login.login("Admin", "admin123")
 
-        # Navigate to PIM
         pim = PIMPage(driver)
-        pim.go_to_pim()
+        employees = [("Akshay", "Kumar"), ("Abhishek", "Kumar"), ("Ranveer", "Singh")]
 
         # Add Employees
-        employees = [("Akshay", "Kumar"), ("Abhishek", "Kumar"), ("Ranveer", "Singh")]
         for emp in employees:
+            pim.go_to_add_employee()
             pim.add_new_employee(emp[0], emp[1])
 
         # Verify Employees
         for emp in employees:
-            pim.verify_employee(emp[0])  # verifying by first name
+            pim.verify_employee(first=emp[0], last=emp[1])
 
         # Logout
-        WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CLASS_NAME, "oxd-userdropdown-tab"))
-        ).click()
-        WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.LINK_TEXT, "Logout"))
-        ).click()
-
+        logout(driver)
         driver.quit()
 
-
-
+# -------------------- Run Script --------------------
+if __name__ == "__main__":
+    TestOrangeHRM().test_workflow()

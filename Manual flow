@@ -1,0 +1,36 @@
+Manual Test Script – OrangeHRM 
+1. Test Case: Valid Login Objective: 
+Verify that users can log in with correct credentials. Precondition: User is on the login page. 
+Steps: Enter valid username and valid password,click the Login button. Expected Result: User should be redirected to the dashboard page.
+Actual Result: User is redirected to the dashboard page.
+
+2. Test Case: Invalid Login (Wrong Password) Objective: 
+Verify login fails with incorrect password. Steps: Enter valid username and incorrect password,click the Login button. 
+Expected Result: Error message “Invalid credentials” should be displayed. Actual Result: Error message “Invalid credentials” is displayed
+
+3. Test Case: Blank Username Field Objective: 
+Verify error when username is left blank. Steps: Leave username empty and enter valid password,click the Login button. 
+Expected Result: Error message “Required” should be displayed under username field. Actual Result: Error message “Required” is displayed under username field.
+
+4. Test Case: Blank Password Field Objective: 
+Verify error when password is left blank. Steps: Enter valid username and leave password field empty,click the Login button. 
+Expected Result: Error message “Required” should be displayed under password field. Actual Result:  Error message “Required” is displayed under password field.
+
+5. Test Case: Add New Employee Objective: 
+Verify that a new employee can be added. Precondition: User is logged in and navigates to PIM module.
+Steps: Click PIM → Add Employee. Enter First Name and Last Name,click Save. 
+Expected Result: Employee should be created and displayed in the list. Actual Result: Employee is created and displayed in the list.
+
+6. Test Case: Add Employee Without First Name Objective:
+Verify error when first name is missing. 
+Steps: Leave First Name blank. Enter Last Name,click Save. 
+Expected Result: Error message “Required” should be displayed under First Name. Actual Result: Error message “Required” is displayed under First Name.
+
+7. Test Case: Search Employee Objective: 
+Verify that employees can be searched from the Employee List. 
+Steps: Go to Employee List. Enter the employee name in the search box,click Search. 
+Expected Result: The employee record should appear in the list. Actual Result: The employee record appears in the list.
+
+8. Test Case: Delete Employee Objective: 
+Verify that an employee can be deleted. 
+Steps: Go to Employee List. Search for the employee. Select the employee record. Click Delete and confirm. Expected Result: Employee is removed from the list.
